@@ -1,0 +1,83 @@
+html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+#map {
+    width: 75%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    float: left;
+    border-top: 1px groove #6E676A;
+    border-bottom: 1px groove #6E676A;
+}
+
+#sidepane {
+    width: 25%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    float: left;
+    background-image: -webkit-gradient(linear, left top, right bottom, color-stop(0, #FFFFFF), color-stop(1, #F6D4FF));
+}
+
+#searchpane {
+    width: 100%;
+    height: 50%;
+    position: relative;
+    overflow: scroll;
+}
+
+#detailspane {
+    width: 100%;
+    height: 50%;
+    position: relative;
+    overflow: scroll;
+}
+
+.wineries, .wineries svg {
+    position: absolute
+}
+
+.wineries svg {
+    width:50px;
+    height:50px;
+    padding-right:100px;
+    font:10px sans-serif;
+}
+
+.wineries circle {
+    fill: #B91BE0;
+    stroke: black;
+    stroke-width: 1.5px;
+}
+
+.wineries circle.selected {
+    fill: #B91BE0;
+    stroke: #FA43EE;
+    fill-opacity: 0.5;
+    stroke-width: 1.5px;
+}
+
+.label {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.selectedHeader {
+    font-size: 30px;
+    text-align: center;
+    color: #B91BE0;
+    font-weight: bold;
+    width: 100%;
+    font-family: "Hoefler Text", calibri, serif;
+}
+
+.selectedContent {
+    font-size: 16px;
+    font-family: papyrus, "hoefler text", calibri, serif;
+    margin-left: 5px;
+}

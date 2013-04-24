@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true"></script>
+    <script type="text/javascript" src="http://mbostock.github.com/d3/d3.js?1.29.1"></script>
+    <link rel="stylesheet" type="text/css" href="navigrape.css">
+    <script type="text/javascript" src="navigrape.js"></script>
+    <title>Navigrape</title>
+    <script type="text/javascript">
+        var baseUrl = 'http://apiv1.cruvee.com/',
+            searchPath = 'search/locations/all',
+            data = [],
+            overlay,
+            buffer = .02;
+
+        function appendLocationResults (resp) {
+            resp.results.forEach(function (r) {
+                if (r.coordinates.geoLatitude !== null && r.state.toLowerCase() === 'va') {
+                    data.push({
+                        name: r.winery.name,
+                        loc: r.coordinates,
+                        city: r.city,
+                        state: r.state,
+                        zip: r.zip,
+                        addr: (r.line1 || null) + (r.line2 === null ? '' : ('<br/>' + r.line2)),
+                        gardens: r.gardens,
+                        dogFriendly: r.dogFriendly
+                    });
+                }
+            });
+
+            //if (data.length > 15) {
+                createOverlay();
+            /*} else {
+                navigrape.ajax.get(resp.nextUrl, { callback: 'appendLocationResults' }, false);
+            }*/
+        }
+
+        function processLocationResults (resp) {
+            data = [];
+            appendLocationResults(resp);
+        }
+    </script>
+</head>
+
+<body>
+    <div id="map"></div>
+    <div id="sidepane">
+        <div id="searchpane">
+            <select>
+                <option value="va">VA</option>
+                <option value="nc">NC</option>
+            </select>
+        </div>
+        <div id="detailspane">
+
+        </div>
+    </div>
+    <script type="text/javascript">
+        var map = new google.maps.Map(d3.select("#map").node(), {
+            zoom: 8,
+            center: new google.maps.LatLng(38.0345, -78.4865),
+            mapTypeId: google.maps.MapTypeId.ROADMAP
+        });
+
+        function createOverlay () {
+
+        overlay = new google.maps.OverlayView();
+
+        overlay.onAdd = function () {
+            var layer = d3.select(this.getPanes().overlayMouseTarget).append("div")
+                    .attr("class", "wineries");
+            overlay.draw = function () {
+                var projection = this.getProjection(),
+                        padding = 10;
+
+                var marker = layer.selectAll("svg")
+                        .data(data)
+                        .each(transform)
+                        .enter().append("svg:svg")
+                        .each(transform)
+                        .each(appendListener)
+                        .attr("class", "marker");
+                marker.append("svg:circle")
+                        .attr("r", 4.5)
+                        .attr("cx", padding)
+                        .attr("cy", padding);
+
+                // Add a label.
+                marker.append("svg:text")
+                        .attr("class", "label")
+                        .attr("x", padding + 7)
+                        .attr("y", padding)
+                        .attr("dy", ".31em")
+                        .text(function(d) { return d.name; });
+
+                function appendListener (d) {
+                    google.maps.event.addDomListener(this, 'mouseover', editOverlay);
+                    google.maps.event.addDomListener(this, 'mouseout', editOverlay);
+                    google.maps.event.addDomListener(this, 'click', clickHandler);
+                }
+
+                function clickHandler (event) {
+                    d3.selectAll('circle')
+                            .classed('selected', false)
+                            .transition().duration(500)
+                            .attr('r', 4.5);
+
+                    var t = d3.select(event.target);
+                    t
+                            .classed('selected', true)
+                            .transition().duration(500)
+                            .attr('r', 9);
+                    updateDetails(t.data()[0]);
+                }
+
+                function editOverlay (event) {
+                    if (!/selected/.test(event.target.getAttribute('class'))) {
+                        var r = event.type === 'mouseover' ? 9 : 4.5;
+                        d3.select(event.target)
+                                .transition().duration(500)
+                                .attr("r", r);
+                    }
+                }
+
+                function transform(d) {
+                    var dat = new google.maps.LatLng(d.loc.geoLatitude, d.loc.geoLongitude);
+                    dat = projection.fromLatLngToDivPixel(dat);
+                    return d3.select(this)
+                            .style("left", (dat.x - padding) + "px")
+                            .style("top", (dat.y - padding) + "px");
+                }
+
+            }
+        };
+
+        overlay.setMap(map);
+
+        }
+
+        /*processLocationResults({
+            results: generateRandomData()
+        });*/
+
+        function generateRandomData() {
+            var i = 0,
+                data = [],
+                names = [
+                    'Veritas Vinyards',
+                    'Bluemont Vineyards',
+                    'Get Drunk',
+                        'what','yupyup'
+                ];
+            while (i < 15) {
+                i++;
+                data.push({
+                    winery: {
+                        name: names[i%4]
+                    },
+                    coordinates: {
+                        geoLatitude: 37.0345 + Math.random() * 2,
+                        geoLongitude: -79.4865 + Math.random() * 2
+                    },
+                    state: 'VA'
+                })
+            }
+
+            return data;
+        }
+
+        function updateDetails(data) {
+            var d = data,
+                template = '<p class="selectedHeader">' + d.name + '</p>' +
+                        '<p class="selectedContent">' + d.addr + '<br/>' +
+                        d.city + ', ' + d.state + ' ' + (d.zip || '') + '<br/>' +
+                        'Dog Friendly: ' + (d.dogFriendly === null ? 'Unknown' : d.dogFriendly) + '<br/>' +
+                        'Gardens: ' + (d.gardens === null ? 'Unknown' : d.gardens) + '</p>';
+            update(
+                    "detailspane",
+                    template
+            );
+        }
+
+        navigrape.ajax.get(
+            baseUrl + searchPath,
+            {
+                lat: 38.0345,
+                lng: -78.4865,
+                radius: 50,
+                unit: 'miles',
+                fmt: 'json',
+                rpp: 50,
+                callback: 'processLocationResults'
+            }
+        );
+    </script>
+</body>
+</html>
